@@ -1,0 +1,1288 @@
+function [ejeZ,ejeX,ejeY] = fCalculosyGraficaDUNoAH(ejeZ,ejeX,ejeY,N,verif,casoSintesis, anguloX, anguloY, d, caso,verifCurva, angulocorteTheta, angulocortePhi,nivelLL, exc)
+
+%FUNCIÓN DE ANÁLISIS-SÍNTESIS PARA ARREGLOS EN EL PLANO
+% Función usada en: Análisis, Posición del Lóbulo Principal y
+% Dolph-Chebyshev
+% Encargada de buscar y graficar los parámetros del Arreglo en Plano.
+% Se encarga de hallar máximos, mínimos, ancho de haz, ancho de haz a -3dB
+% posición de lóbulo principal, nivel relativo de lóbulos laterales.
+
+% Parámetros de entrada son: 
+%     ejeX ----------------------------> Valores que toma el Factor de Arreglo en tita
+%     ejeY ----------------------------> Valores que toma el Factor de Arreglo en phi
+%     ejeZ ----------------------------> Valores que toma el Factor de Arreglo en z
+%     N -------------------------------> Número de elementos del Arreglo
+%     verif ---------------------------> Decisión entre excitaciones uniformes o no.
+%     casoSíntesis --------------------> Decisión entre Distribución Uniforme o Chebyshev.
+%     caso -----------------------------> Decisión entre Análisis y Síntesis de Lóbulo Principal
+%     anguloX -------------------------> Posición del Lóbulo Principal en Theta.
+%     ánguloY -------------------------> Posición del Lóbulo Principal en Phi.
+%     d -------------------------------> Espacio Inter-Elementos
+%     ángulocorteTheta ----------------> Ángulo para realizar curva de nivel en theta.
+%     ángulocortePhi ------------------> Ángulo para realizar curva de nivel en phi.
+%     verifCurva ----------------------> Indica en cual eje se realiza corte
+%     nivelLL -------------------------> Indica el Nivel Relativo de los de los lóbulos laterales
+%     exc  ----------------------------> Indica cómo es el ensanchamiento del lóbulo principal.
+
+% Retorna los valores de:
+%     ejeX ----------------------------> Valores que toma el Factor de Arreglo en tita
+%     ejeY ----------------------------> Valores que toma el Factor de Arreglo en phi
+%     ejeZ ----------------------------> Valores que toma el Factor de Arreglo en z
+%                                        del lóbulo principal.
+% Contiene la siguientes funciones:
+%     fColoresPlano ----------------------------> Función de colores para Análisis y Síntesis de Posición de Lóbulo Principal
+%     extrema y extrema2------------------------> Función EXTERNA que permite obtener máximos para Análisis y Síntesis de Posición de Lóbulo Principal
+%     fMinimosPlano ----------------------------> Función con rutina para encontrar mínimos para todos los casos
+%     fAnchoHaz3DBPlano ------------------------> Función que calcula Ancho de Haz a -3 dB y Ancho de Haz para Análisis de excitaciones
+%                                                 uniformes
+%     fAnchoHaz3DBPlanoNoUniforme --------------> Función que calcula Ancho de Haz a -3 dB y Ancho de Haz para Análisis de excitaciones
+%                                                 no uniformes
+%     fAnchoHaz3DBPlanoNoUniformeExc -----------> Función que calcula Ancho de Haz a -3 dB y Ancho de Haz para Análisis de excitaciones
+%                                                 no uniformes y ensanchamiento del lóbulo principal en theta y phi
+%     fSintesisAnchoHaz3DBPlano ----------------> Función que calcula Ancho de Haz a -3 dB y Ancho de Haz para Síntesis de excitaciones
+%                                                 uniformes
+%     fSintesisAnchoHaz3DBPlanoNoUniforme ------> Función que calcula Ancho de Haz a -3 dB y Ancho de Haz para Análisis de excitaciones
+%                                                 no uniformes
+%     fSintesisAnchoHaz3DBPlanoNoUniformeExc ---> Función que calcula Ancho de Haz a -3 dB y Ancho de Haz para Análisis de excitaciones
+%                                                 no uniformes y ensanchamiento del lóbulo principal en theta y phi
+%     fColoresChebyshev ------------------------> Función de colores para Síntesis de Chebyshev
+%     fMaximosPlano ----------------------------> Función para calcular los máximos en Síntesis Chebyshev
+%     fAnchoHaz3DBChebyshevPlano ---------------> Función que calcula Ancho de Haz a -3 dB y Ancho de Haz para Chebyshev con desfasaje cero
+%     fAnchoHaz3DBChebyshevPlanoD --------------> Función que calcula Ancho de Haz a -3 dB y Ancho de Haz para Chebyshev con desfasaje 
+%                                                 distinto de cero
+
+%SÍMBOLOS Y PARÁMETROS INICIALES
+beta = (2*pi);
+
+%ANÁLISIS Y SÍNTESIS DE POSICIÓN DE LÓBULO PRINCIPAL
+if casoSintesis == 1
+    [colorDUniforme, colorminimosuniforme,colormaximosuniforme,coloranchohazuniforme,colorlpuniforme,colorminimos3dB,coloranchohaz3dB,curvaCorteTheta,minimosCorteTheta,curvaCortePhi,minimosCortePhi] = fColoresPlano;
+
+    %GRAFICA EN DB
+    colorDUniformedB = 1/255.*[203 255 255
+                201 255 255
+                199 255 255
+                197 255 255
+                195 255 255
+                193 255 255
+                191 255 255
+                189 255 255
+                187 255 255
+                185 255 255
+                183 255 255
+                181 255 255
+                179 255 255
+                177 255 255
+                175 255 255
+                173 255 255
+                172 255 255
+                170 255 255
+                168 255 255
+                166 255 255
+                164 255 255
+                162 255 255
+                160 255 255
+                158 255 255
+                156 255 255
+                154 255 255
+                152 255 255
+                150 255 255
+                148 255 255
+                146 255 255
+                144 255 255
+                142 255 255
+                140 255 255
+                138 255 255
+                136 255 255
+                134 255 255
+                132 255 255
+                130 255 255
+                128 255 255
+                126 253 255
+                124 251 255
+                122 249 255
+                120 247 255
+                118 245 255
+                116 242 255
+                114 241 255
+                112 238 255
+                110 237 255
+                108 235 255
+                106 233 255
+                104 231 255
+                102 229 255
+                100 227 255
+                98 225 255
+                96 223 255
+                94 221 255
+                92 219 255
+                90 217 255
+                88 215 255
+                86 213 255
+                84 211 255
+                81 209 255
+                79 207 255
+                77 205 255
+                75 203 255
+                73 201 255
+                71 199 255
+                69 197 255
+                67 195 255
+                65 193 255
+                63 191 255
+                61 189 255
+                59 187 255
+                57 185 255
+                55 183 255
+                53 181 255
+                51 179 255
+                49 177 255
+                47 175 255
+                45 173 255
+                43 171 255
+                41 169 255
+                39 167 255
+                37 165 255
+                35 163 255
+                33 161 255
+                31 159 255
+                29 157 255
+                27 155 255
+                25 153 255
+                23 151 255
+                21 149 255
+                19 147 255
+                17 145 255
+                15 143 255
+                13 141 255
+                11 138 255
+                9 136 255
+                7 134 255
+                5 132 255
+                3 131 255
+                1 129 255
+                0 126 254
+                0 125 252
+                0 122 250
+                0 121 248
+                0 118 246
+                0 116 244
+                0 115 242
+                0 113 240
+                0 111 238
+                0 109 236
+                0 107 234
+                0 105 232
+                0 102 230
+                0 100 228
+                0 98 227
+                0 97 225
+                0 94 223
+                0 93 221
+                0 91 219
+                0 89 217
+                0 87 215
+                0 84 213
+                0 83 211
+                0 81 209
+                0 79 207
+                0 77 205
+                0 75 203
+                0 73 201
+                0 70 199
+                0 68 197
+                0 66 195
+                0 64 193
+                0 63 191
+                0 61 189
+                0 59 187
+                0 57 185
+                0 54 183
+                0 52 181
+                0 51 179
+                0 49 177
+                0 47 175
+                0 44 174
+                0 42 172
+                0 40 170
+                0 39 168
+                0 37 166
+                0 34 164
+                0 33 162
+                0 31 160
+                0 29 158
+                0 27 156
+                0 25 154
+                0 22 152
+                0 20 150
+                0 18 148
+                0 17 146
+                0 14 144
+                0 13 142
+                0 11 140
+                0 9 138
+                0 6 136
+                0 4 134
+                0 2 132
+                0 0 130
+                0 0 128
+                0 0 126];
+    figure
+    surf(ejeX, ejeY, 20*log10(ejeZ));
+    zlim([-50 0]);
+    caxis([-50 0]);
+    shading interp;
+    colorDUniformeGraficadB = flipud(colorDUniformedB); 
+    colormap(colorDUniformeGraficadB);
+    colorbar;
+    xlabel("theta (grados)");
+    ylabel("phi (grados) ");
+    zlabel("|S|");
+    title("Diagrama del Factor de Arreglo en dB");
+    
+     
+    %GRÁFICA EN ESFÉRICAS
+
+    [eTheta,ePhi,rho] = sph2cart(ejeX.*(pi/180),ejeY.*(pi/180),ejeZ);
+    figure
+    surf(ePhi,rho,eTheta);
+    shading interp;
+    colorDUniformeGrafica = flipud(colorDUniforme); 
+    colormap(colorDUniformeGrafica);
+    colorbar off
+    ax = gca;
+    ax.FontSize = 15;
+    xlim([-1 1])
+    ylim([-1 1])
+    zlim([0 1])
+    title("Diagrama del Factor de Arreglo - Coordenadas Esféricas",'FontSize', 22,'FontName', 'Times New Roman');
+    set(ax,'XTickLabel',[], 'YTickLabel', [], 'ZTickLabel', []);
+    hold on
+    grid minor
+    quiver3(-1,0,0,2.2,0,0,'k','LineWidth',1);
+    quiver3(0,-1,0,0,2.2,0,'k','LineWidth',1);
+    quiver3(0,0,0,0,0,1.1,'k','LineWidth',1);
+    text(0,0,1.05,'Z','Color','k','FontSize', 15,'FontName', 'Times New Roman')
+    text(-0.075,0.75,0,'Y','Color','k','FontSize', 15,'FontName', 'Times New Roman')
+    text(0.9,-0.15,0,'X','Color','k','FontSize', 15,'FontName', 'Times New Roman')
+    view(141.7217, 39.9798);
+
+    %GRÁFICA CARTESIANA
+    figure
+    hold on 
+    surf(ejeX,ejeY,ejeZ);
+    xticks(-90:10:90);
+    yticks(-90:10:90);
+    shading interp;
+    colorDUniformeGrafica = flipud(colorDUniforme); 
+    colormap(colorDUniformeGrafica);
+    colorbar;
+    ax = gca;
+    ax.FontSize = 15;
+    grid on
+    xlabel("\theta (grados)",'FontSize', 18,'FontName', 'Times New Roman');
+    ylabel("\phi (grados)",'FontSize', 18,'FontName', 'Times New Roman');
+    zlabel("|S|",'FontSize', 18,'FontName', 'Times New Roman');
+    title("Diagrama del Factor de Arreglo",'FontSize', 22,'FontName', 'Times New Roman');
+    view(-30.281,60.0606);
+
+    %RUTINA PARA CÁLCULO DE MÁXIMOS  Y POSICIÓN DEL LÓBULO PRINCIPAL 
+    [zmax,imax] = extrema2(ejeZ); 
+    ejeXmax = ejeX(imax);
+    ejeYmax  = ejeY(imax);
+    
+    %Ubicación de lóbulo principal
+    zmax2 = round(zmax);
+    indUbicLobPrin = find(zmax2 == 1);                                            
+    xLobPrin = ejeXmax(indUbicLobPrin(1));
+    yLobPrin = ejeYmax(indUbicLobPrin(1));
+    zLobPrin = zmax(indUbicLobPrin(1));                                           
+    tam = size(indUbicLobPrin);
+    vueltas = tam(1);
+    for elim = vueltas:-1:1
+        ejeXmax(indUbicLobPrin(elim)) = [];
+        ejeYmax(indUbicLobPrin(elim)) = [];
+        zmax(indUbicLobPrin(elim)) = [];
+    end
+    
+    %Eliminación valores repetidos en la línea vacía
+    taman = size(ejeXmax);
+    tamano = taman(1);
+    matrizDecision = [];
+
+    for fil = 1:1:tamano
+        valorX = ejeXmax(fil);
+        if valorX >= 0 
+            valorY = ejeYmax(fil);  
+            resta = abs(valorY - 0.1);
+            if resta >= 0.2
+                matrizDecision(fil) = 0;
+            else
+                if resta == 0.1
+                    matrizDecision(fil) = 0;
+                else
+                    matrizDecision(fil) = 1;
+                end
+            end
+
+        else
+            valorY = ejeYmax(fil);
+            resta = abs(valorY + 0.1);
+            if resta >= 0.2
+                matrizDecision(fil) = 0;
+            else
+                if resta == 0.1
+                    matrizDecision(fil) = 0;
+                else
+                    matrizDecision(fil) = 1;
+                end
+            end
+        end
+    end
+    
+    matrizElim = [];
+    matrizElim = find(matrizDecision == 1);
+    tam2 = size(matrizElim);
+    vueltas2 = tam2(2);
+
+    for elim2 = vueltas2:-1:1
+        ejeXmax(matrizElim(elim2)) = [];
+        ejeYmax(matrizElim(elim2)) = [];
+        zmax(matrizElim(elim2)) = [];
+    end
+
+    %Si hay desfasaje en "y" se corrige error
+    if anguloY ~= 0
+        yPositivos = [];
+        yPositivos = find(ejeYmax == 0);
+        tam3 = size(yPositivos);
+        limite = tam3(1);
+        for eliminar = limite:-1:1
+            ejeXmax(yPositivos(eliminar)) = [];
+            ejeYmax(yPositivos(eliminar)) = [];
+            zmax(yPositivos(eliminar)) = [];
+        end
+    end
+    
+    %MUESTRA POR CONSOLA DE MÁXIMOS
+    tamMax= size(ejeXmax);
+    tamMaximos = tamMax(1);
+    disp(' ');
+    disp('-POSICIÓN DEL LÓBULO PRINCIPAL-')
+    disp([' El lóbulo principal se encuentra ubicado en Theta: ',num2str(xLobPrin),'°, Phi: ',num2str(yLobPrin),'°, z:',num2str(zLobPrin)]);
+    disp(' ');
+    disp('-POSICIÓN DE LÓBULOS SECUNDARIOS-')
+    for impMax = 1:1:tamMaximos
+        numeroLobulo = impMax;
+        xPosicionLobulo = ejeXmax(numeroLobulo);
+        yPosicionLobulo = ejeYmax(numeroLobulo);
+        zPosicionLobulo = zmax(numeroLobulo);
+        imprimirMaximos = ['- El lóbulo secundario n° ',num2str(numeroLobulo),' tiene las coordenadas: Theta: ',num2str(xPosicionLobulo),'°, Phi: ',num2str(yPosicionLobulo),'°, z: ',num2str(zPosicionLobulo)];
+        disp(imprimirMaximos);
+        disp(' ');
+    end
+
+    %GRÁFICA DE MÁXIMOS
+    hold on  
+    plot3(xLobPrin,yLobPrin,zLobPrin,'d','Color', colorlpuniforme,'LineWidth',1.25) %Se grafican máximos por función extrema (Lobulo Principal) 
+    plot3(ejeXmax,ejeYmax,zmax,'o','Color', colormaximosuniforme,'LineWidth',1.25) %Se grafican máximos por función extrema (Lobulos Secundarios) 
+
+    %RUTINA PARA MOVIMIENTO DE LÓBULO PRINCIPAL
+    %CASO ANÁLISIS
+    if caso == 1                
+        % THETA - X
+        if anguloX ~= 0
+            if anguloX > 0
+                disp(' ');
+                movX = (acos(-(anguloX*pi/180)/(beta*d)))*(180/pi);
+                movimientoEnX = 90 + movX;
+                if movimientoEnX > 90
+                    movimientoEnX =  180 - movimientoEnX;
+                    disp('-MOVIMIENTO LÓBULO PRINCIPAL EN EJE THETA-');
+                    disp([' El lóbulo principal se movió ',num2str(movimientoEnX),'° en el eje Theta.']);
+                    disp(' ');
+                else
+                    disp('-MOVIMIENTO LÓBULO PRINCIPAL EN EJE THETA-');
+                    disp([' El lóbulo principal se movió ',num2str(movimientoEnX),'° en el eje Theta.']);
+                    disp(' ');
+                end
+            else
+                disp(' ');
+                movX = (acos(-(anguloX*pi/180)/(beta*d)))*(180/pi);
+                movimientoEnX = 90 - movX;
+                disp('-MOVIMIENTO LÓBULO PRINCIPAL EN EJE THETA-');
+                disp([' El lóbulo principal se movió ',num2str(movimientoEnX),'° en el eje Theta.']);
+                disp(' ');
+
+            end
+        else
+            disp('-MOVIMIENTO LÓBULO PRINCIPAL EN EJE THETA-');
+            disp(' El lóbulo principal no se movió en el eje Theta.')
+            disp(' ');
+        end
+        %PHI - Y
+        if anguloY ~= 0
+            if anguloY > 0
+                movY = (acos(-(anguloY*pi/180)/(beta*d)))*(180/pi);
+                movimientoEnY = 90 + movY;
+                if movimientoEnY > 90
+                    movimientoEnY = 180 - movimientoEnY;
+                    disp('-MOVIMIENTO LÓBULO PRINCIPAL EN EJE PHI-');
+                    disp([' El lóbulo principal se movió ',num2str(movimientoEnY),'° en el eje Phi.']);
+                    disp(' ');
+                else
+                    disp('-MOVIMIENTO LÓBULO PRINCIPAL EN EJE PHI-');
+                    disp([' El lóbulo principal se movió ',num2str(movimientoEnY),'° en el eje Phi.']);
+                    disp(' ');
+                end
+            else
+                movY = (acos(-(anguloY*pi/180)/(beta*d)))*(180/pi);
+                movimientoEnY = 90 - movY;
+                disp('-MOVIMIENTO LÓBULO PRINCIPAL EN EJE PHI-');
+                disp([' El lóbulo principal se movió ',num2str(movimientoEnY),'° en el eje Phi.']);
+                disp(' ');
+            end
+        else
+            disp('-MOVIMIENTO LÓBULO PRINCIPAL EN EJE PHI-');
+            disp(' El lóbulo principal no se movió en el eje Phi.')
+            disp(' ');
+        end
+        
+    %CASO SÍNTESIS
+    else            
+        posicionX = anguloX;
+        posicionY = anguloY;
+        
+        posiciones = [posicionX posicionY];
+        resultado = zeros(1,2);
+        for posicion = 1:1:2
+            if posiciones(posicion) > 0
+                elemento = 90 - posiciones(posicion);
+                resultado(posicion) = (-pi)*cos((elemento)*(pi/180));
+            else
+                elemento = 90 - posiciones(posicion);
+                resultado(posicion) = (-pi)*cos((elemento)*(pi/180));
+            end
+        end 
+
+        desfasajeX = resultado(1)*(180/pi);
+        desfasajeY = resultado(2)*(180/pi);
+        desfasajes = [desfasajeX desfasajeY];
+        ejeT = 'Theta';
+        ejeP = 'Phi';
+        
+        for imprDesafasaje = 1:1:2
+            if imprDesafasaje == 1
+                disp('-DESFASAJE REQUERIDO EN EJE THETA-');
+                disp([' Para que el lóbulo principal esté en el eje ',ejeT,' en ',num2str(posiciones(imprDesafasaje)),'° se necesita un desfasaje de ',num2str(desfasajes(imprDesafasaje)),'°']); 
+                disp(' ');
+            else
+                disp('-DESFASAJE REQUERIDO EN EJE PHI-');
+                disp([' Para que el lóbulo principal esté en el eje ',ejeP,' en ',num2str(posiciones(imprDesafasaje)),'° se necesita un desfasaje de ',num2str(desfasajes(imprDesafasaje)),'°']);
+                disp(' ');
+            end
+        end
+    end
+    
+    %RUTINA PARA CÁLCULO NIVEL RELATIVO LÓBULOS SECUNDARIOS
+    NivelLLCart = max(zmax);
+    NivelLL = 20*log10(NivelLLCart);
+    disp('-NIVEL RELATIVO DE LÓBULOS SECUNDARIOS-');
+    disp([' El nivel relativo de los lóbulos secundarios es: ',num2str(NivelLL),' dB.']);
+    disp(' ');
+
+    %RUTINA PARA CÁLCULO DE MÍNIMOS
+    %Excitaciones Uniformes 
+    if verif == 1  
+        %Número de elementos mayor a 10
+            [ejeXMinFijoTheta,ejeYMinFijoTheta,ejeZMinFijoTheta,ejeXMinFijoPhi,ejeYMinFijoPhi,ejeZMinFijoPhi,puntosVectThetaFijo,puntosVect] = fMinimosPlano(ejeZ,ejeX,ejeY,N);
+            for puntosThetaFijo = 1:1:puntosVectThetaFijo(1)
+                for puntos2ThetaFijo = 1:1:puntosVectThetaFijo(2)
+                    hold on
+                    %Gráfica con Theta Fijo
+                     if ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo) == 0
+                            %Se descartan valores
+                     else
+                        valorrestauniforme = abs(ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo));
+                        restauniforme = abs(0.1 - valorrestauniforme);
+                        if restauniforme < 0.1
+                            %No se grafica
+                        else
+                            if ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo) >= 0         
+                                plot3((-1).*ejeXMinFijoTheta(puntosThetaFijo),ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo),ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo),'.','Color', colorminimosuniforme, 'Linewidth', 1.2);
+                            else
+                                plot3((-1).*ejeXMinFijoTheta(puntosThetaFijo),ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo),abs(ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo)),'.','Color', colorminimosuniforme, 'Linewidth', 1.1);
+                            end
+                        end
+                     end 
+                end
+            end
+
+            for puntos = 1:1:puntosVect(1)
+                for puntos2 = 1:1:puntosVect(2)
+                    hold on   
+                    %Gráfica con Phi Fijo
+                    if ejeXMinFijoPhi(puntos,puntos2) == 0
+                         %Se descartan valores
+                    else
+                        if ejeZMinFijoPhi(puntos,puntos2) >= 0         
+                            plot3(ejeXMinFijoPhi(puntos,puntos2),(-1).*ejeYMinFijoPhi(puntos),ejeZMinFijoPhi(puntos,puntos2),'.','Color', colorminimosuniforme, 'Linewidth', 1.2);
+                        else
+                            plot3(ejeXMinFijoPhi(puntos,puntos2),(-1).*ejeYMinFijoPhi(puntos),abs(ejeZMinFijoPhi(puntos,puntos2)),'.','Color', colorminimosuniforme, 'Linewidth', 1.2);
+                        end
+                    end   
+                end
+            end
+
+            ylim([-90 90]);
+            xlim([-90 90]);
+            zlim([0 1]);
+            
+        %Excitaciones No Uniformes
+    else   
+        [ejeXMinFijoTheta,ejeYMinFijoTheta,ejeZMinFijoTheta,ejeXMinFijoPhi,ejeYMinFijoPhi,ejeZMinFijoPhi,puntosVectThetaFijo,puntosVect] = fMinimosPlano(ejeZ,ejeX,ejeY,N);
+        %Se grafica
+        for puntosThetaFijo = 1:1:puntosVectThetaFijo(1)
+            for puntos2ThetaFijo = 1:1:puntosVectThetaFijo(2)
+                hold on
+                %Gráfica con Theta Fijo
+                 if ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo) == 0
+                 %Se descartan valores
+                 else
+                    valorresta = abs(ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo));
+                    resta = abs(0.1 - valorresta);
+                    if resta < 0.1
+                        %No se grafica
+                    else
+                        if ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo) >= 0         
+                            plot3((-1).*ejeXMinFijoTheta(puntosThetaFijo),ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo),ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo),'.','Color', colorminimosuniforme, 'Linewidth', 1.2);
+                        else
+                            plot3((-1).*ejeXMinFijoTheta(puntosThetaFijo),ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo),abs(ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo)),'.','Color', colorminimosuniforme, 'Linewidth', 1.2);
+                    
+                        end
+                    end
+                    
+                 end 
+            end
+        end
+
+        for puntos = 1:1:puntosVect(1)
+            for puntos2 = 1:1:puntosVect(2)
+                hold on   
+                %Gráfica con Phi Fijo
+                if ejeXMinFijoPhi(puntos,puntos2) == 0
+                     %Se descartan valores
+                else
+                    if ejeZMinFijoPhi(puntos,puntos2) >= 0         
+                        plot3(ejeXMinFijoPhi(puntos,puntos2),(-1).*ejeYMinFijoPhi(puntos),ejeZMinFijoPhi(puntos,puntos2),'.','Color', colorminimosuniforme, 'Linewidth', 1.1);
+                    else
+                        plot3(ejeXMinFijoPhi(puntos,puntos2),(-1).*ejeYMinFijoPhi(puntos),abs(ejeZMinFijoPhi(puntos,puntos2)),'.','Color', colorminimosuniforme, 'Linewidth', 1.1);
+                    end
+                end   
+            end
+        end
+
+        ylim([-90 90]);
+        xlim([-90 90]);
+        zlim([0 1]);
+    end 
+    
+    %RUTINA PARA ANCHO DE HAZ A -3dB Y ANCHO DE HAZ
+    
+    %CASO: ANÁLISIS
+    if caso == 1
+            hold on
+        contour3(ejeX,ejeY,ejeZ,[0.5,0.5],'--','Color', coloranchohazuniforme, 'Linewidth', 1.45)
+
+        %Ensanchamiento de Haz Principal en Theta o Phi
+        %Búsqueda de valor numérico
+        [ladoIzquierdoAnchoPhi,ladoDerechoAnchoPhi,mSinDesfasajeParaPhi,ladoIzquierdoAnchoTheta,ladoDerechoAnchoTheta,mSinDesfasajeParaTheta, mDesfasajeThetaParaTheta, anchoHazDesfasajeThetaParaTheta, mDesfasajeThetaParaPhi,anchoHazDesfasajeThetaParaPhi, mDesfasajePhiParaPhi, anchoHazDesfasajePhiParaPhi, mDesfasajePhiParaTheta, anchoHazDesfasajePhiParaTheta, mDesfasajeAmbosParaPhi,anchoHazDesfasajeAmbosParaPhi, mDesfasajeAmbosParaTheta, anchoHazDesfasajeAmbosParaTheta, movimientoEnXCambio, movimientoEnYCambio] = fAnchoHaz3DBPlanoNoUniforme(ejeY,ejeZ,ejeX,anguloX,anguloY,d,N);           
+        anchoDeHaz3dBParaPhi = abs(ladoIzquierdoAnchoPhi - ladoDerechoAnchoPhi);
+        anchoDeHaz3dBParaTheta = abs(ladoIzquierdoAnchoTheta - ladoDerechoAnchoTheta);
+
+        %Muestra por Consola de Ancho de Haz a -3DB
+        disp('-ANCHO DE HAZ A -3 dB-');
+        disp(['- Realizando un corte en el Eje Phi, el Ancho del Haz a - 3 dB es igual a: ' num2str(anchoDeHaz3dBParaPhi) '°']); 
+        disp(['- Realizando un corte en el Eje Theta, el Ancho del Haz a - 3 dB es igual a: ' num2str(anchoDeHaz3dBParaTheta) '°']); 
+        disp('  ');
+        disp('-MÍNIMOS CUANDO SE CALCULA ANCHO DE HAZ A - 3 dB -');
+
+        %Se muestra por Consola cuando la Fase es igual a cero
+        if (anguloY == 0 && anguloX == 0)
+           disp(['- Los mínimos en Phi = 0º son los siguientes: ' num2str(mSinDesfasajeParaTheta)]); 
+           disp(['- Los mínimos en Theta = 0º son los siguientes: ' num2str(mSinDesfasajeParaPhi)]); 
+        end
+
+        %Se muestra por Consola cuando la Fase de Phi es distinta de cero 
+        if (anguloY ~= 0 && anguloX == 0)
+            disp(['- Los mínimos en Phi = ', num2str(-movimientoEnYCambio),'º son los siguientes: ' num2str(mDesfasajePhiParaTheta)]);
+            disp(['- Los mínimos en Theta = 0 º son los siguientes: ' num2str(mDesfasajePhiParaPhi)]);         
+        end
+
+        %Se muestra por Consola cuando ambas fases son distintas de cero
+        if  (anguloY ~= 0 && anguloX ~= 0)
+            disp(['- Los minimos en Phi = ', num2str(-movimientoEnYCambio),'º son los siguientes: ' num2str(mDesfasajeAmbosParaTheta)]); 
+            disp(['- Los minimos en Theta = ', num2str(-movimientoEnXCambio),'º son los siguientes: ' num2str(mDesfasajeAmbosParaPhi)]);  
+        end
+
+        %Se muestra por Consola cuando la Fase de Theta es distinta de cero
+        if (anguloX ~= 0 && anguloY == 0)
+            disp(['- Los mínimos en Phi = 0º son los siguientes: ' num2str(mDesfasajeThetaParaTheta)]); 
+            disp(['- Los minimos en Theta = ', num2str(-movimientoEnXCambio),'º son los siguientes: ' num2str(mDesfasajeThetaParaPhi)]); 
+        end
+
+        %ANCHO DE HAZ
+        disp(' ');
+        disp('-ANCHO DE HAZ-');
+
+        %Se muestra por Consola cuando la Fase es igual a cero
+        if (anguloY == 0 && anguloX == 0)
+            %Caso Theta
+            mSinDesfasajeParaThetaPositivo = mSinDesfasajeParaTheta(mSinDesfasajeParaTheta>0);
+            mSinDesfasajeParaThetaNegativo = mSinDesfasajeParaTheta(mSinDesfasajeParaTheta<0);
+            mSinDesfasajeParaThetaPositivoMenor = min(mSinDesfasajeParaThetaPositivo);
+            mSinDesfasajeParaThetaNegativoMayor = max(mSinDesfasajeParaThetaNegativo);
+            anchoHazSinDesfasajeParaTheta = mSinDesfasajeParaThetaPositivoMenor + abs(mSinDesfasajeParaThetaNegativoMayor);
+            disp(['- El Ancho de Haz en Phi = 0º es igual: ' num2str(anchoHazSinDesfasajeParaTheta) '°']); 
+
+            %Caso Phi
+            mSinDesfasajeParaPhiPositivo = mSinDesfasajeParaPhi(mSinDesfasajeParaPhi>0);
+            mSinDesfasajeParaPhiNegativo = mSinDesfasajeParaPhi(mSinDesfasajeParaPhi<0);
+            mSinDesfasajeParaPhiPositivoMenor = min(mSinDesfasajeParaPhiPositivo);
+            mSinDesfasajeParaPhiNegativoMayor = max(mSinDesfasajeParaPhiNegativo);
+            anchoHazSinDesfasajeParaPhi = mSinDesfasajeParaPhiPositivoMenor + abs(mSinDesfasajeParaPhiNegativoMayor);
+            disp(['- El Ancho de Haz en Theta = 0º es igual: ' num2str(anchoHazSinDesfasajeParaPhi) '°']); 
+        end
+
+        %Se muestra por Consola cuando la Fase de Phi es distinta de cero 
+        if (anguloY ~= 0 && anguloX == 0)
+            %Caso Phi
+            disp(['- El Ancho de Haz en Phi = ', num2str(-movimientoEnYCambio),'º es igual a: ' num2str(anchoHazDesfasajePhiParaTheta) '°']); 
+            %Caso Theta
+            disp(['- El Ancho de Haz en Theta = 0 º es igual a: ' num2str(anchoHazDesfasajePhiParaPhi) '°']);      
+        end
+
+        %Se muestra por Consola cuando ambas fases son distintas de cero
+        if  (anguloY ~= 0 && anguloX ~= 0)
+            %Caso Phi
+            disp(['- El Ancho de Haz en Phi = ', num2str(-movimientoEnYCambio),'º es igual a: ' num2str(anchoHazDesfasajeAmbosParaTheta) '°']);            
+            %Caso Theta               
+            disp(['- El Ancho de Haz en Theta = ', num2str(-movimientoEnXCambio),'º es igual a: ' num2str(anchoHazDesfasajeAmbosParaPhi) '°']); 
+        end
+
+        %Se muestra por Consola cuando la Fase de Theta es distinta de cero
+        if (anguloX ~= 0 && anguloY == 0)
+            %Caso Phi
+            disp(['- El Ancho de Haz en Phi = 0º es igual a: ' num2str(anchoHazDesfasajeThetaParaTheta) '°']); 
+            %Caso Theta
+            disp(['- El Ancho de Haz en Theta = ', num2str(-movimientoEnXCambio),'º es igual a: ' num2str(anchoHazDesfasajeThetaParaPhi) '°']); 
+        end             
+    %CASO: SÍNTESIS
+    else    
+    %Ensanchamiento de Haz Principal Theta o Phi
+    %Búsqueda de valor numérico
+        [ladoIzquierdoAnchoPhi,ladoDerechoAnchoPhi,mSinDesfasajeParaPhiSintesis,ladoIzquierdoAnchoTheta,ladoDerechoAnchoTheta,mSinDesfasajeParaThetaSintesis, mDesfasajeThetaParaThetaSintesis, anchoHazDesfasajeThetaParaThetaSintesis, mDesfasajeThetaParaPhiSintesis,anchoHazDesfasajeThetaParaPhiSintesis, mDesfasajePhiParaPhiSintesis, anchoHazDesfasajePhiParaPhiSintesis, mDesfasajePhiParaThetaSintesis, anchoHazDesfasajePhiParaThetaSintesis, mDesfasajeAmbosParaPhiSintesis,anchoHazDesfasajeAmbosParaPhiSintesis, mDesfasajeAmbosParaThetaSintesis, anchoHazDesfasajeAmbosParaThetaSintesis, anguloXCambio, anguloYCambio] = fSintesisAnchoHaz3DBPlanoNoUniforme(ejeY,ejeZ,ejeX,anguloX,anguloY,exc,N);
+        anchoDeHaz3dBParaPhiSintesis = abs(ladoIzquierdoAnchoPhi - ladoDerechoAnchoPhi);
+        anchoDeHaz3dBParaThetaSintesis = abs(ladoIzquierdoAnchoTheta - ladoDerechoAnchoTheta);
+
+        %Muestra por Consola de Ancho de Haz a -3DB
+        disp('-ANCHO DE HAZ A -3 dB-');
+        disp(['- Realizando un corte en el Eje Phi, el Ancho del Haz a - 3 dB es igual a: ' num2str(anchoDeHaz3dBParaPhiSintesis) '°']); 
+        disp(['- Realizando un corte en el Eje Theta, el Ancho del Haz a - 3 dB es igual a: ' num2str(anchoDeHaz3dBParaThetaSintesis) '°']); 
+        disp('  ');
+        disp('-MÍNIMOS CUANDO SE CALCULA ANCHO DE HAZ A - 3 dB -');
+
+        %Se muestra por Consola cuando la Fase es igual a cero
+        if (anguloY == 0 && anguloX == 0)
+           disp(['- Los mínimos en Phi = 0º son los siguientes: ' num2str(mSinDesfasajeParaThetaSintesis)]);
+           disp(['- Los mínimos en Theta = 0º son los siguientes: ' num2str(mSinDesfasajeParaPhiSintesis)]); 
+        end
+
+        %Se muestra por Consola cuando la Fase de Phi es distinta de cero 
+        if (anguloY ~= 0 && anguloX == 0)
+            disp(['- Los mínimos en Phi = ', num2str(-anguloYCambio),'º son los siguientes: ' num2str(mDesfasajePhiParaThetaSintesis)]); 
+            disp(['- Los mínimos en Theta = 0 º son los siguientes: ' num2str(mDesfasajePhiParaPhiSintesis)]);         
+        end
+
+        %Se muestra por Consola cuando ambas fases son distintas de cero
+        if  (anguloY ~= 0 && anguloX ~= 0)
+            disp(['- Los minimos en Phi = ', num2str(-anguloYCambio),'º son los siguientes: ' num2str(mDesfasajeAmbosParaThetaSintesis)]); 
+            disp(['- Los minimos en Theta = ', num2str(-anguloXCambio),'º son los siguientes: ' num2str(mDesfasajeAmbosParaPhiSintesis)]); 
+        end
+
+        %Se muestra por Consola cuando la Fase de Theta es distinta de cero
+        if (anguloX ~= 0 && anguloY == 0)
+            disp(['- Los mínimos en Phi = 0º son los siguientes: ' num2str(mDesfasajeThetaParaThetaSintesis)]); 
+            disp(['- Los minimos en Theta = ', num2str(-anguloXCambio),'º son los siguientes: ' num2str(mDesfasajeThetaParaPhiSintesis)]); 
+        end
+
+        %ANCHO DE HAZ
+        disp(' ');
+        disp('-ANCHO DE HAZ-');
+
+        %Se muestra por Consola cuando la Fase es igual a cero
+        if (anguloY == 0 && anguloX == 0)
+            %Caso Phi
+            mSinDesfasajeParaThetaPositivoSintesis = mSinDesfasajeParaThetaSintesis(mSinDesfasajeParaThetaSintesis>0);
+            mSinDesfasajeParaThetaNegativoSintesis = mSinDesfasajeParaThetaSintesis(mSinDesfasajeParaThetaSintesis<0);
+            mSinDesfasajeParaThetaPositivoMenorSintesis = min(mSinDesfasajeParaThetaPositivoSintesis);
+            mSinDesfasajeParaThetaNegativoMayorSintesis = max(mSinDesfasajeParaThetaNegativoSintesis);
+            anchoHazSinDesfasajeParaThetaSintesis = mSinDesfasajeParaThetaPositivoMenorSintesis + abs(mSinDesfasajeParaThetaNegativoMayorSintesis);
+            disp(['- El Ancho de Haz en Phi = 0º es igual: ' num2str(anchoHazSinDesfasajeParaThetaSintesis) '°']); 
+            %Caso Theta
+            mSinDesfasajeParaPhiPositivoSintesis = mSinDesfasajeParaPhiSintesis(mSinDesfasajeParaPhiSintesis>0);
+            mSinDesfasajeParaPhiNegativoSintesis = mSinDesfasajeParaPhiSintesis(mSinDesfasajeParaPhiSintesis<0);
+            mSinDesfasajeParaPhiPositivoMenorSintesis = min(mSinDesfasajeParaPhiPositivoSintesis);
+            mSinDesfasajeParaPhiNegativoMayorSintesis = max(mSinDesfasajeParaPhiNegativoSintesis);
+            anchoHazSinDesfasajeParaPhiSintesis = mSinDesfasajeParaPhiPositivoMenorSintesis + abs(mSinDesfasajeParaPhiNegativoMayorSintesis);
+            disp(['- El Ancho de Haz en Theta = 0º es igual: ' num2str(anchoHazSinDesfasajeParaPhiSintesis) '°']); 
+        end
+
+        %Se muestra por Consola cuando la Fase de Phi es distinta de cero 
+        if (anguloY ~= 0 && anguloX == 0)
+            %Caso Phi
+            disp(['- El Ancho de Haz en Phi = ', num2str(-anguloYCambio),'º es igual a: ' num2str(anchoHazDesfasajePhiParaThetaSintesis) '°']); 
+            %Caso Theta
+            disp(['- El Ancho de Haz en Theta = 0 º es igual a: ' num2str(anchoHazDesfasajePhiParaPhiSintesis) '°']);      
+        end
+
+        %Se muestra por Consola cuando ambas fases son distintas de cero
+        if  (anguloY ~= 0 && anguloX ~= 0)
+            %Caso Phi
+            disp(['- El Ancho de Haz en Phi = ', num2str(-anguloYCambio),'º es igual a: ' num2str(anchoHazDesfasajeAmbosParaThetaSintesis) '°']);            
+            %Caso Theta               
+            disp(['- El Ancho de Haz en Theta = ', num2str(-anguloXCambio),'º es igual a: ' num2str(anchoHazDesfasajeAmbosParaPhiSintesis) '°']); 
+        end
+
+        %Se muestra por Consola cuando la Fase de Theta es distinta de cero
+        if (anguloX ~= 0 && anguloY == 0)
+            %Caso Phi
+            disp(['- El Ancho de Haz en Phi = 0º es igual a: ' num2str(anchoHazDesfasajeThetaParaThetaSintesis) '°']); 
+            %Caso Theta
+            disp(['- El Ancho de Haz en Theta = ', num2str(-anguloXCambio),'º es igual a: ' num2str(anchoHazDesfasajeThetaParaPhiSintesis) '°']); 
+        end
+    end
+    %RUTINA PARA GRÁFICAS DE CURVAS DE NIVEL ELEGIDAS POR USUARIO
+    disp('  ');
+    disp('-MÍNIMOS EN OTRAS CURVAS DE NIVEL-');
+    rangof = [0.5,0.5];
+    %Para Corte en Theta
+    if verifCurva == 1 
+        figure 
+        otrosCortesTheta = contour(ejeY,ejeZ,(ejeX + angulocorteTheta) ,rangof,'Color',curvaCorteTheta,'LineWidth',1.75);
+        minimocorteTheta = otrosCortesTheta(2,:);
+        [posicionTheta,indiceTheta] = findpeaks(-(minimocorteTheta()));
+        equivalenteTheta = otrosCortesTheta(1,:);
+        minimosTheta = equivalenteTheta(indiceTheta);
+        disp(['- Los mínimos en Theta = ',num2str(angulocorteTheta),'º son los siguientes: ',num2str(minimosTheta)]); %Se muestran mínimos
+        hold on
+        grid minor
+        plot(minimosTheta,(-1).*posicionTheta,'*','Color',minimosCorteTheta,'LineWidth',1.45); %Se grafica curva de nivel con mínimos
+        xlabel("\phi (grados)",'FontSize', 14,'FontName', 'Times New Roman');
+        ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+        title(['Curva de Nivel en Theta = ',num2str(angulocorteTheta),'º'],'FontSize', 18,'FontName', 'Times New Roman');
+        ax = gca;
+        ax.FontSize = 13;
+    end
+    %Para Corte en Phi
+    if verifCurva == 2
+        figure   
+        otrosCortesPhi = contour(ejeX,ejeZ,(ejeY + angulocortePhi) ,rangof,'Color',curvaCortePhi,'LineWidth',1.75);
+        minimocortePhi = otrosCortesPhi(2,:);
+        [posicionPhi,indicePhi] = findpeaks(-(minimocortePhi()));
+        equivalentePhi = otrosCortesPhi(1,:);
+        minimosPhi = equivalentePhi(indicePhi);
+        disp(['- Los mínimos en Phi = ',num2str(angulocortePhi),'º son los siguientes: ',num2str(minimosPhi)]); %Se muestran mínimos
+        disp(' ');
+        hold on
+        grid minor
+        plot(minimosPhi,(-1).*posicionPhi,'*','Color',minimosCortePhi,'LineWidth',1.45); %Se grafica curva de nivel con mínimos
+        ax = gca;
+        ax.FontSize = 13;
+        xlabel("\theta (grados) ",'FontSize', 14,'FontName', 'Times New Roman');
+        ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+        title(['Curva de Nivel en Phi = ',num2str(angulocortePhi),'º'],'FontSize', 18,'FontName', 'Times New Roman');
+    end
+    
+    if verifCurva == 3
+     %Para Corte en Theta
+        figure 
+        otrosCortesTheta = contour(ejeY,ejeZ,(ejeX + angulocorteTheta) ,rangof,'Color',curvaCorteTheta,'LineWidth',1.75);
+        minimocorteTheta = otrosCortesTheta(2,:);
+        [posicionTheta,indiceTheta] = findpeaks(-(minimocorteTheta()));
+        equivalenteTheta = otrosCortesTheta(1,:);
+        minimosTheta = equivalenteTheta(indiceTheta);
+        disp(['- Los mínimos en Theta = ',num2str(angulocorteTheta),'º son los siguientes: ',num2str(minimosTheta)]); %Se muestran mínimos
+        hold on
+        grid minor
+        plot(minimosTheta,(-1).*posicionTheta,'*','Color',minimosCorteTheta,'LineWidth',1.45); %Se grafica curva de nivel con mínimos
+        xlabel("\phi (grados)",'FontSize', 14,'FontName', 'Times New Roman');
+        ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+        title(['Curva de Nivel en Theta = ',num2str(angulocorteTheta),'º'],'FontSize', 18,'FontName', 'Times New Roman');
+        ax = gca;
+        ax.FontSize = 13;
+        ylim([-0.01 1]);
+
+    %Para Corte en Phi
+        figure      
+        otrosCortesPhi = contour(ejeX,ejeZ,(ejeY + angulocortePhi) ,rangof,'Color',curvaCortePhi,'LineWidth',1.75);
+        minimocortePhi = otrosCortesPhi(2,:);
+        [posicionPhi,indicePhi] = findpeaks(-(minimocortePhi()));
+        equivalentePhi = otrosCortesPhi(1,:);
+        minimosPhi = equivalentePhi(indicePhi);
+        disp(['- Los mínimos en Phi = ',num2str(angulocortePhi),'º son los siguientes: ',num2str(minimosPhi)]); %Se muestran mínimos
+        disp(' ');
+        hold on
+        grid minor
+        plot(minimosPhi,(-1).*posicionPhi,'*','Color',minimosCortePhi,'LineWidth',1.45); %Se grafica curva de nivel con mínimos
+        ax = gca;
+        ax.FontSize = 13;
+        xlabel("\theta (grados) ",'FontSize', 14,'FontName', 'Times New Roman');
+        ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+        title(['Curva de Nivel en Phi = ',num2str(angulocortePhi),'º'],'FontSize', 18,'FontName', 'Times New Roman');
+    end
+    
+    if verifCurva == 4
+        disp('- No se solicitó otra curva de nivel');
+    end
+                                
+%-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+%SÍNTESIS DE CHEBYSHEV
+else
+    [colorChebyshev, colorminimosChebyshev,colormaximosChebyshev,coloranchohazChebyshev,colorlpChebyshev,colorminimos3dBChebyshev,coloranchohaz3dBChebyshev,curvaCorteThetaChebyshev,minimosCorteThetaChebyshev,curvaCortePhiChebyshev,minimosCortePhiChebyshev] = fColoresPlanoChebyshev;
+    
+    nivelRelativoAdim = 10^(nivelLL/20)
+    Nx = N;
+    
+    %GRÁFICA EN DB
+    figure
+    surf(ejeX, ejeY, 20*log10(ejeZ));
+    zlim([-50 0]);
+    shading interp;
+    colormap('default');
+    colorbar;
+    xlabel("theta (grados)");
+    ylabel("phi (grados) ");
+    zlabel("|S|");
+    title("Diagrama del Factor de Arreglo en dB");
+    
+    %GRÁFICA EN ESFÉRICAS
+    [eTheta,ePhi,rho] = sph2cart(ejeX.*(pi/180),ejeY.*(pi/180),ejeZ);
+    figure
+    surf(ePhi,rho,eTheta);
+    shading interp;
+    colorChebyshevGrafica = flipud(colorChebyshev); 
+    colormap(colorChebyshevGrafica);
+    colorbar off;
+    ax = gca;
+    ax.FontSize = 15;
+    title("Diagrama del Factor de Arreglo - Coordenadas Esféricas",'FontSize',22,'FontName', 'Times New Roman');
+    set(ax,'XTickLabel',[], 'YTickLabel', [], 'ZTickLabel', []);
+    hold on
+    grid minor
+    quiver3(-1,0,0,2.2,0,0,'k','LineWidth',1);
+    quiver3(0,-1,0,0,2.2,0,'k','LineWidth',1);
+    quiver3(0,0,0,0,0,1.1,'k','LineWidth',1);
+    text(0,0,1.05,'Z','Color','k','FontSize', 15,'FontName', 'Times New Roman')
+    text(-0.075,0.75,0,'Y','Color','k','FontSize', 15,'FontName', 'Times New Roman')
+    text(0.9,-0.15,0,'X','Color','k','FontSize', 15,'FontName', 'Times New Roman')
+    view(141.7217, 39.9798);
+
+   
+    %GRÁFICA CARTESIANA
+    figure
+    hold on 
+    surf(ejeX, ejeY, ejeZ);
+    xticks(-90:10:90);
+    yticks(-90:10:90);
+    shading interp;
+    colorChebyshevGrafica = flipud(colorChebyshev); 
+    colormap(colorChebyshevGrafica);
+    colorbar;
+    ax = gca;
+    ax.FontSize = 15;
+    xlabel("\theta (grados)",'FontSize', 18,'FontName', 'Times New Roman');
+    ylabel("\phi (grados)",'FontSize', 18,'FontName', 'Times New Roman');
+    zlabel("|S|",'FontSize', 18,'FontName', 'Times New Roman');
+    title("Diagrama del Factor de Arreglo",'FontSize',22,'FontName', 'Times New Roman');
+    grid on
+    view(-30.281,60.0606);
+      
+    %RUTINA PARA MÍNIMOS
+    [ejeXMinFijoTheta,ejeYMinFijoTheta,ejeZMinFijoTheta,ejeXMinFijoPhi,ejeYMinFijoPhi,ejeZMinFijoPhi,puntosVectThetaFijo,puntosVect] = fMinimosPlano(ejeZ,ejeX,ejeY,N);
+    
+    %RUTINA PARA MÁXIMOS
+    [ejeXMaxFijoTheta,ejeYMaxFijoTheta,ejeZMaxFijoTheta,ejeXMaxFijoPhi,ejeYMaxFijoPhi,ejeZMaxFijoPhi,puntosVectThetaFijoMax,puntosVectMax] = fMaximosPlano(ejeZ,ejeX,ejeY,N);
+    [maxConsola, tamMax, maxCorteX, maxCorteY] = fMaximosPlanoConsola(ejeZ,ejeX,ejeY);
+    
+    %RUTINA PARA GRAFICAR MÁXIMOS Y MÍNIMOS
+    %Saca el residuo para ver si es par(Sin desfasaje) o impar (Con Desfasaje)
+    parImpar = mod(casoSintesis,2);                
+
+    for puntosThetaFijo = 1:1:puntosVectThetaFijo(1)
+            for puntos2ThetaFijo = 1:1:puntosVectThetaFijo(2)
+                %Gráfica con Theta Fijo MINIMOS
+                 if ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo) == 0
+
+                 else
+                     if ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo) >= 0
+
+                     else
+                         valorEnY = abs(ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo));
+                         resta = abs(0.1 - valorEnY);
+                         if resta <= 0.1
+
+                         else
+                             rango = nivelRelativoAdim - 4*(nivelRelativoAdim*0.01);
+                             if abs(ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo)) >= rango
+                             else
+                                 if abs(ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo)) > 0.03
+                                 else
+                                     plot3((-1).*ejeXMinFijoTheta(puntosThetaFijo),ejeYMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo),abs(ejeZMinFijoTheta(puntosThetaFijo,puntos2ThetaFijo)),'.','Color', colorminimosChebyshev, 'Linewidth', 1.1);
+                                 end
+                             end
+                         end
+                     end
+                 end 
+            end
+    end
+    
+    for puntos = 1:1:puntosVect(1)
+        for puntos2 = 1:1:puntosVect(2)
+            %Gráfica con Phi Fijo
+            if ejeXMinFijoPhi(puntos,puntos2) == 0
+
+            else
+                if ejeZMinFijoPhi(puntos,puntos2) >= 0         
+
+                else
+                    if abs(ejeZMinFijoPhi(puntos,puntos2)) > 0.009
+
+                    else
+                      plot3(ejeXMinFijoPhi(puntos,puntos2),(-1).*ejeYMinFijoPhi(puntos),abs(ejeZMinFijoPhi(puntos,puntos2)),'.','Color', colorminimosChebyshev, 'Linewidth', 1.1);
+
+                    end 
+                end
+            end   
+        end
+    end
+
+    
+    for puntosThetaFijoMax = 1:1:puntosVectThetaFijoMax(1)
+                for puntos2ThetaFijoMax = 1:1:puntosVectThetaFijoMax(2)
+                    %Gráfica con Theta Fijo MAXIMOS
+                    if ejeYMaxFijoTheta(puntosThetaFijoMax,puntos2ThetaFijoMax) == 0
+                        
+                    else
+                        rango = nivelRelativoAdim - 4*(nivelRelativoAdim*0.01);
+                        if abs(ejeZMaxFijoTheta(puntosThetaFijoMax,puntos2ThetaFijoMax)) >= rango
+                            if ejeZMaxFijoTheta(puntosThetaFijoMax,puntos2ThetaFijoMax) < 1 && ejeZMaxFijoTheta(puntosThetaFijoMax,puntos2ThetaFijoMax) > (nivelRelativoAdim+0.025)
+                     
+                            else
+                                plot3(((-1).*ejeXMaxFijoTheta(puntosThetaFijoMax)),ejeYMaxFijoTheta(puntosThetaFijoMax,puntos2ThetaFijoMax),ejeZMaxFijoTheta(puntosThetaFijoMax,puntos2ThetaFijoMax),'.','Color', colormaximosChebyshev, 'Linewidth', 0.3);
+                            end
+                        else
+                        end
+                    end
+                end
+    end
+    
+    for puntos = 1:1:puntosVectMax(1)
+        for puntos2 = 1:1:puntosVectMax(2)
+            %Gráfica con Phi Fijo MAXIMOS
+            if (ejeXMaxFijoPhi(puntos,puntos2)) == 0 
+
+            else
+                rango = nivelRelativoAdim - 4*(nivelRelativoAdim*0.01);
+                if abs(ejeZMaxFijoPhi(puntos,puntos2)) >= rango 
+                    valorrestaMax = abs(ejeXMaxFijoPhi(puntos,puntos2));
+                    restaMax = abs(0.01 - valorrestaMax); 
+                    if restaMax > 0.01
+                        if ejeZMaxFijoPhi(puntos,puntos2) < 1 && ejeZMaxFijoPhi(puntos,puntos2) > (nivelRelativoAdim+0.025) 
+
+                        else
+                            plot3(ejeXMaxFijoPhi(puntos,puntos2),(-1).* ejeYMaxFijoPhi(puntos),ejeZMaxFijoPhi(puntos,puntos2),'.','Color', colormaximosChebyshev, 'Linewidth', 0.3);
+                        end
+                    else
+                    %No grafica
+                    end
+                else 
+                    %No grafica
+                end
+            end
+        end
+    end
+    
+%RUTINA PARA ENCONTRAR POSICIÓN DEL LÓBULO PRINCIPAL    
+    if parImpar == 0
+        plot3(0,0,1,'d','Color',colorlpChebyshev); 
+        ylim([-90 90]);
+        xlim([-90 90]);
+        zlim([0 1]);
+    else                 
+        posX =  90 - (acos(-(anguloX*pi/180)/(beta*d))*180/pi);
+        posY =  90 - (acos(-(anguloY*pi/180)/(beta*d))*180/pi);
+        plot3(posX,posY,1,'d','Color',colorlpChebyshev); 
+        ylim([-90 90]);
+        xlim([-90 90]);
+        zlim([0 1]);
+    end
+           
+       %RUTINA PARA NIVEL RELATIVO DE LÓBULOS LATERALES
+       [minimoNivel] = fNivelRelativoPlanoSintesis(ejeZ,ejeX,ejeY);
+       NivelRelativoSintesis = 20*log10(minimoNivel);
+       disp('-NIVEL RELATIVO DE LÓBULOS SECUNDARIOS-');
+       disp([' El nivel de los lóbulos secundarios es: ',num2str(NivelRelativoSintesis),' dB.']);
+       disp(' ');
+       
+       %MOSTRAR MÁXIMOS POR CONSOLA
+       disp('-MÁXIMOS-');
+       for imprimirMax = 1:1:tamMax
+          disp(['- En el radio de coordenada Theta = ',num2str(maxConsola(imprimirMax)),'º, hay una circunferencia de máximos de altura = ', num2str(NivelRelativoSintesis), 'dB' ]);
+       end
+          disp(' ');
+          
+       %RUTINA PARA ANCHO DE HAZ A -3dB Y ANCHO DE HAZ     
+       hold on
+       contour3(ejeX,ejeY,ejeZ,[0.5,0.5],'--','Color',coloranchohazChebyshev,'LineWidth',1.45)
+       
+       %CON DESFASAJE IGUAL A CERO
+       if verif == 1
+           
+           %Se llama a la función
+           [ladoIzquierdoAncho,ladoDerechoAncho,rangoAncho,mDesfasajeChebyshev,posicionMinDesfasajeChebyshev] = fAnchoHaz3DBChebyshevPlano(ejeY,ejeZ,ejeX);
+           
+           %Cálculo de ANCHO DE HAZ A - 3 DB
+           anchoDeHaz3dBChebyshev = abs(ladoIzquierdoAncho - ladoDerechoAncho);
+
+           %Se muestra por Consola Ancho de Haz a - 3dB
+           disp('-ANCHO DE HAZ A -3 dB-');
+           disp([' El Ancho del Haz a - 3 dB es igual a: ' num2str(anchoDeHaz3dBChebyshev)]); 
+           disp('  ');
+
+           %Gráficas de Curva de Nivel para Mostrar Ancho a -3dB
+            plot(ladoDerechoAncho,0.5,'o','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+            plot(ladoIzquierdoAncho,0.5,'o','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+            plot(rangoAncho,0.5*ones(length(rangoAncho)),'--','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+            plot(mDesfasajeChebyshev,(-1)*posicionMinDesfasajeChebyshev,'*','Color', colorminimos3dBChebyshev,'LineWidth',1.45);
+            xlabel("\theta (grados)",'FontSize', 14,'FontName', 'Times New Roman');
+            ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+            title('Curva de Nivel para Ancho de Haz a -3 dB (eje Phi Fijo)','FontSize', 22,'FontName', 'Times New Roman');
+            ax = gca;
+            ax.FontSize = 13;
+            
+            %Se muestra por consola mínimos
+            disp('-MÍNIMOS CUANDO SE CALCULA ANCHO DE HAZ A - 3 dB -');
+            disp(['- Los minimos con Phi = 0° son los siguientes (en grados): ' num2str(mDesfasajeChebyshev)]);
+
+            %Cálculo de ANCHO HAZ
+            absoltutoMinDesfasajeCero = abs(mDesfasajeChebyshev);
+            minimoMinDesfasajeCero = min(absoltutoMinDesfasajeCero);
+            anchodeHazChebyshev = minimoMinDesfasajeCero*2;
+            disp('-ANCHO DE HAZ-');
+            disp([' El Ancho del Haz es igual a: ' num2str(anchodeHazChebyshev)]); 
+            disp('  ');
+       end
+          
+       %CON DESFASAJE DISTINTO DE CERO
+       if verif == 2
+
+            %Búsqueda de valor numérico
+            [rangoAncho,ladoIzquierdoAncho,ladoDerechoAncho,mDesfasajeThetaChebyshev, posicionMinDesfasajeThetaChebyshev, anchoHazDesfasajeThetaChebyshev, mDesfasajePhiChebyshev, posicionMinDesfasajePhiChebyshev,anchoHazDesfasajePhiChebyshev,mDesfasajeAmbosChebyshev, posicionMinDesfasajeAmbosChebyshev,anchoHazDesfasajeAmbosChebyshev,movimientoEnXCambio, movimientoEnYCambio] = fAnchoHaz3DBChebyshevPlanoD(ejeY,ejeZ,ejeX,anguloX,anguloY,d,N);
+            
+            %Cálculo de ANCHO DE HAZ A - 3 DB
+            anchoDeHaz3dBChebyshev = abs(ladoIzquierdoAncho - ladoDerechoAncho);
+
+            %Gráficas para Ancho de Haz a - 3dB
+            %Se grafica cuando Fase en Phi es distinta de cero
+            if  (anguloY ~= 0 && anguloX == 0) 
+                hold on
+                grid minor
+                plot(ladoDerechoAncho,0.5,'o','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+                plot(ladoIzquierdoAncho,0.5,'o','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+                plot(rangoAncho,0.5*ones(length(rangoAncho)),'--','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+                plot(mDesfasajePhiChebyshev,(-1).*posicionMinDesfasajePhiChebyshev,'*','Color', colorminimos3dBChebyshev,'LineWidth',1.45);
+                xlabel("\theta (grados)",'FontSize', 14,'FontName', 'Times New Roman');
+                ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+                title('Curva de Nivel para Ancho de Haz a -3 dB (eje Phi Fijo)','FontSize', 18,'FontName', 'Times New Roman');
+                ax = gca;
+                ax.FontSize = 13;
+            end
+
+            %Se grafica cuando Fase en Theta es distinta de cero
+            if (anguloX ~= 0 && anguloY == 0) 
+                 hold on
+                grid minor
+                plot(ladoDerechoAncho,0.5,'o','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+                plot(ladoIzquierdoAncho,0.5,'o','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+                plot(rangoAncho,0.5*ones(length(rangoAncho)),'--','Color',coloranchohaz3dBChebyshev,'LineWidth',1.25);
+                plot(mDesfasajeThetaChebyshev,(-1).*posicionMinDesfasajeThetaChebyshev,'*','Color', colorminimos3dBChebyshev,'LineWidth',1.45);  
+                xlabel("\phi (grados)",'FontSize', 14,'FontName', 'Times New Roman');
+                ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+                title('Curva de Nivel para Ancho de Haz a -3 dB (eje Theta Fijo)','FontSize', 18,'FontName', 'Times New Roman');
+                ax = gca;
+                ax.FontSize = 13;
+            end
+            
+            %Se grafica cuando ambas Fases son distintas de cero
+            if  (anguloY ~= 0 && anguloX ~= 0) 
+                hold on
+                grid minor
+                plot(ladoDerechoAncho,0.5,'o','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+                plot(ladoIzquierdoAncho,0.5,'o','Color', coloranchohaz3dBChebyshev,'LineWidth',1.25);
+                plot(rangoAncho,0.5*ones(length(rangoAncho)),'--','Color',coloranchohaz3dBChebyshev,'LineWidth',1.25);
+                plot(mDesfasajeAmbosChebyshev,(-1).*posicionMinDesfasajeAmbosChebyshev,'*','Color', colorminimos3dBChebyshev,'LineWidth',1.45); 
+                xlabel("\theta (grados)",'FontSize', 14,'FontName', 'Times New Roman');
+                ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+                title('Curva de Nivel para Ancho de Haz a -3 dB (eje Phi Fijo)','FontSize', 18,'FontName', 'Times New Roman');
+                ax = gca;
+                ax.FontSize = 13;
+            end
+
+            %Muestra por Consola de ANCHO DE HAZ A -3DB y mínimos 
+            disp('-ANCHO DE HAZ A -3 dB-');
+            disp([' El Ancho del Haz a - 3 dB es igual a: ' num2str(anchoDeHaz3dBChebyshev) 'º']); %Se muestra cuál es el Ancho de Haz a -3 dB
+            disp('  ');
+            disp('-MÍNIMOS CUANDO SE CALCULA ANCHO DE HAZ A - 3 dB -');
+
+            %Se muestra por Consola cuando la Fase de Phi es distinta de cero 
+            if (anguloY ~= 0 && anguloX == 0)
+                disp(['- Los minimos con Theta = ', num2str(-movimientoEnYCambio),'º son los siguientes (en grados): ' num2str(mDesfasajePhiChebyshev)]); %Se muestra mínimos para Phi = 0º
+            end
+
+            %Se muestra por Consola cuando la Fase de Theta es distinta de cero
+            if (anguloX ~= 0 && anguloY == 0)
+                disp(['- Los minimos con Phi = ', num2str(-movimientoEnYCambio),'º son los siguientes (en grados): ' num2str(mDesfasajeThetaChebyshev)]); %Se muestra mínimos para Phi = 0º
+            end
+            
+            %Se muestra por Consola cuando ambas fases son distintas de cero
+            if  (anguloY ~= 0 && anguloX ~= 0)
+                disp(['- Los minimos con Theta = ', num2str(-movimientoEnXCambio),'º son los siguientes (en grados): ' num2str(mDesfasajeAmbosChebyshev)]); %Se muestra mínimos para Phi = 0º
+            end
+            
+            %Cálculo de ANCHO de HAZ            
+            disp('  ');
+            disp('-ANCHO DE HAZ-');
+            %Se muestra por Consola cuando la Fase de Phi es distinta de cero 
+            if (anguloY ~= 0 && anguloX == 0)       
+                disp(['- El Ancho del Haz es igual a: ' num2str(anchoHazDesfasajePhiChebyshev) 'º']);
+            end
+
+            %Se muestra por Consola cuando la Fase de Theta es distinta de cero
+            if (anguloX ~= 0 && anguloY == 0)            
+                disp(['- El Ancho del Haz es igual a: ' num2str(anchoHazDesfasajeThetaChebyshev) 'º']);
+            end   
+            
+             %Se muestra por Consola cuando ambas fases son distintas de cero
+            if  (anguloY ~= 0 && anguloX ~= 0)
+                disp(['- El Ancho del Haz es igual a: ' num2str(anchoHazDesfasajeAmbosChebyshev) 'º']);
+            end
+
+      end
+        
+       %RUTINA PARA MÍNIMOS CON CURVAS DE NIVEL      
+       %Gráficas de Curvas de Nivel elegidas por usuario
+        rangof = [0.5,0.5];
+        
+        %Para Corte en Theta
+        if verifCurva == 1
+            %Gráfica de Curva de Nivel
+            figure
+            hold on
+            grid minor
+            otrosCortesTheta = contour(ejeY,ejeZ,(ejeX + angulocorteTheta) ,rangof,'Color',curvaCorteThetaChebyshev,'LineWidth',1.75);
+            minimocorteTheta = otrosCortesTheta(2,:);
+            [posicionTheta,indiceTheta] = findpeaks(-(minimocorteTheta()));
+            equivalenteTheta = otrosCortesTheta(1,:);
+            minimosTheta = equivalenteTheta(indiceTheta);          
+            plot(minimosTheta,(-1)*posicionTheta,'*','Color',minimosCorteThetaChebyshev,'LineWidth',1.45);
+            ax = gca;
+            ax.FontSize = 13;
+            title(['Curva de Nivel en Theta = ',num2str(angulocorteTheta),'º'],'FontSize', 18,'FontName', 'Times New Roman');
+            xlabel("\phi (grados) ",'FontSize', 14,'FontName', 'Times New Roman');
+            ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+            %Se muestra por consola a los mínimos
+            disp('  ');
+            disp('-MÍNIMOS EN CURVAS DE NIVEL-');
+            disp(['- Los mínimos en Theta = ',num2str(angulocorteTheta),'º son los siguientes:']); %Se muestran mínimos        
+            tam = size(minimosTheta);
+            cantMinimos = tam(2);
+            for numMin = 1:1:cantMinimos
+                disp(['     ',num2str(minimosTheta),'°']); %Se muestran mínimos        
+            end
+        end
+        
+        %Para Corte en Phi
+        if verifCurva == 2
+            %Gráfica de Curva de Nivel
+            figure
+            hold on
+            grid minor
+            otrosCortesPhi = contour(ejeX,ejeZ,(ejeY + angulocortePhi) ,rangof,'Color',curvaCortePhiChebyshev,'LineWidth',1.75);
+            minimocortePhi = otrosCortesPhi(2,:);
+            [posicionPhi,indicePhi] = findpeaks(-(minimocortePhi()));
+            equivalentePhi = otrosCortesPhi(1,:);
+            minimosPhi = equivalentePhi(indicePhi);
+            plot(minimosPhi,(-1)*posicionPhi,'*','Color',minimosCorteThetaChebyshev,'LineWidth',1.45); 
+            ax = gca;
+            ax.FontSize = 13;
+            title(['Curva de Nivel en Phi = ',num2str(angulocortePhi),'º'],'FontSize', 18,'FontName', 'Times New Roman');
+            xlabel("\theta (grados) ",'FontSize', 14,'FontName', 'Times New Roman');
+            ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+            ylim([-0.01 1]);
+            %Se muestra por consola a los mínimos
+            disp('  ');
+            disp('-MÍNIMOS EN CURVAS DE NIVEL-');
+            disp(['- Los mínimos en Phi = ',num2str(angulocortePhi),'º son los siguientes: ',num2str(minimosPhi)]); 
+        end
+
+        if verifCurva == 3
+            %Para Corte Theta
+            %Gráfica de Curva de Nivel
+            figure
+            hold on
+            grid minor
+            otrosCortesTheta = contour(ejeY,ejeZ,(ejeX + angulocorteTheta) ,rangof,'Color',curvaCorteThetaChebyshev,'LineWidth',1.75);
+            minimocorteTheta = otrosCortesTheta(2,:);
+            [posicionTheta,indiceTheta] = findpeaks(-(minimocorteTheta()));
+            equivalenteTheta = otrosCortesTheta(1,:);
+            minimosTheta = equivalenteTheta(indiceTheta);          
+            plot(minimosTheta,(-1)*posicionTheta,'*','Color',minimosCorteThetaChebyshev,'LineWidth',1.45); 
+            ax = gca;
+            ax.FontSize = 13;
+            title(['Curva de Nivel en Theta = ',num2str(angulocorteTheta),'º'],'FontSize', 18,'FontName', 'Times New Roman');
+            xlabel("\phi (grados) ",'FontSize', 14,'FontName', 'Times New Roman');
+            ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+            %Se muestra por consola a los mínimos
+            disp('  ');
+            disp('-MÍNIMOS EN CURVAS DE NIVEL-');
+            disp(['- Los mínimos en Theta = ',num2str(angulocorteTheta),'º son los siguientes: ',num2str(minimosTheta)]); %Se muestran mínimos
+
+           %Para Corte en Phi  
+           %Gráfica de Curva de Nivel
+            figure
+            hold on
+            grid minor
+            otrosCortesPhi = contour(ejeX,ejeZ,(ejeY + angulocortePhi) ,rangof,'Color',curvaCortePhiChebyshev,'LineWidth',1.75);
+            minimocortePhi = otrosCortesPhi(2,:);
+            [posicionPhi,indicePhi] = findpeaks(-(minimocortePhi()));
+            equivalentePhi = otrosCortesPhi(1,:);
+            minimosPhi = equivalentePhi(indicePhi);
+            plot(minimosPhi,(-1)*posicionPhi,'*','Color',minimosCortePhiChebyshev,'LineWidth',1.45); 
+            ax = gca;
+            ax.FontSize = 13;
+            title(['Curva de Nivel en Phi = ',num2str(angulocortePhi),'º'],'FontSize', 18,'FontName', 'Times New Roman');
+            xlabel("\theta (grados) ",'FontSize', 14,'FontName', 'Times New Roman');
+            ylabel("|S|",'FontSize', 14,'FontName', 'Times New Roman');
+            %Se muestra por consola a los mínimos
+            disp(['- Los mínimos en Phi = ',num2str(angulocortePhi),'º son los siguientes: ',num2str(minimosPhi)]); %Se muestran mínimos 
+        end
+
+        if verifCurva == 4
+            disp('-MÍNIMOS EN CURVAS DE NIVEL-');
+            disp(' - No se solicitó ninguna otra Curva de Nivel');
+        end
+end
+
+
+

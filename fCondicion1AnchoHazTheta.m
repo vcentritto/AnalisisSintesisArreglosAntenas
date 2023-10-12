@@ -1,0 +1,27 @@
+function [indiceMinimoACasoTheta,indiceMinimoBCasoTheta] = fCondicion1AnchoHazTheta(minimoACasoTheta,minimoBCasoTheta,resultadoRestaCasoTheta)
+
+% ¿CUÁLES MÓDULOS USAN LA FUNCIÓN fCondicion1AnchoHazTheta?
+%   - Es una subfunción de fAnchoHaz3DBPlanoXY, por lo que aplica en los  mismos módulos que esta última. 
+
+% ¿QUÉ SE PUEDE ENCONTRAR EN LA FUNCIÓN fCondicion1AnchoHazTheta?
+% I.  Aplica la condición 1 en el cálculo del ancho del haz principal (corte en theta)
+%     Funciona como una herramienta para calcular correctamente el ancho de
+%     haz principal cuando la posición del lóbulo principal en phi = 0°
+
+% ¿CUÁLES SON LOS PARÁMETROS DE ENTRADA? 
+%     minimoACasoTheta, minimoBCasoTheta,resultadoRestaCasoTheta ---------> Parámetros de entrada necesarios para la rutina del ancho de haz principal
+
+% ¿CUÁLES SON LOS PARÁMETROS DE SALIDA? 
+%     indiceMinimoACasoTheta ----------------------> Posición de nulo más cercano a lóbulo principal.
+%     indiceMinimoBCasoTheta ----------------------> Posición de segundo nulo más cercano a lóbulo principal.
+
+% PARTE I: APLICA CONDICIÓN 1 DE CÁLCULO DE ANCHO DE HAZ PRINCIPAL (CORTE THETA)
+if (minimoACasoTheta == minimoBCasoTheta)
+        indiceMinimoACasoTheta = find(resultadoRestaCasoTheta == minimoACasoTheta);
+        indiceMinimoACasoTheta = indiceMinimoACasoTheta(1);
+        indiceMinimoBCasoTheta = find(resultadoRestaCasoTheta == minimoBCasoTheta);
+        indiceMinimoBCasoTheta = indiceMinimoBCasoTheta(2);
+else
+        indiceMinimoACasoTheta = find(resultadoRestaCasoTheta == minimoACasoTheta);
+        indiceMinimoBCasoTheta = find(resultadoRestaCasoTheta == minimoBCasoTheta);
+end
